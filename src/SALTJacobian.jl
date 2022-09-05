@@ -1,4 +1,4 @@
-module REPLACE_PKG
+module SALTJacobian
 
 # External packages
 using TOML
@@ -7,7 +7,7 @@ using ArgParse
 
 # Internal Packages
 include("RunModule.jl")
-using .RunModule: run_REPLACE_PKG
+using .RunModule: run_SALTJacobian
 
 # Exports
 export main 
@@ -45,7 +45,7 @@ function main()
     end
     toml["global"]["toml_path"] = dirname(abspath(toml_path))
     setup_global!(toml, verbose)
-    run_REPLACE_PKG(toml)
+    run_SALTJacobian(toml)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

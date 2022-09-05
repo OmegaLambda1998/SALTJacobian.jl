@@ -1,6 +1,6 @@
-using REPLACE_PKG
+using SALTJacobian
 using Test
 
-@testset "REPLACE_PKG.jl" begin
+@testset "SALTJacobian.jl" begin
     # Write your tests here.
 end

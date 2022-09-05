@@ -1,5 +1,5 @@
-name = "REPLACE_PKG"
-uuid = "a50c839e-1b84-4575-b48f-4fda80ec5e07"
+name = "SALTJacobian"
+uuid = "23497e12-9a2b-4937-962e-9e86ac9c79a7"
 authors = ["Patrick Armstrong <patrick.armstrong@anu.edu.au> and contributors"]
 version = "0.1.0"
 

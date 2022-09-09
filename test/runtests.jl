@@ -1,6 +1,8 @@
 using SALTJacobian
 using Test
 
-@testset "SALTJacobian.jl" begin
-    # Write your tests here.
+@testset verbose = true "SALTJacobian.jl" begin
+
+    include("./arg_tests.jl")
+
 end

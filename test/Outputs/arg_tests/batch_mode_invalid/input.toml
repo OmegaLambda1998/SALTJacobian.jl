@@ -1,0 +1,13 @@
+[global]
+toml_path = "./"
+logging = false
+base_path = "/home/patricka/.julia/dev/SALTJacobian/test/"
+log_file = "nothing"
+output_path = "/home/patricka/.julia/dev/SALTJacobian/test/Outputs/arg_tests/batch_mode_invalid/"
+
+[jacobian]
+path = "Inputs/arg_tests/batch_mode_invalid_jacobian.fits"
+
+[surfaces]
+base_surface = "Inputs/arg_tests/batch_mode_invalid_base_surface/"
+trainopt = "\"MAGSHIFT Instrument Filter 0.01\""

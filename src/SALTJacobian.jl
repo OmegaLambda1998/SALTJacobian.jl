@@ -7,10 +7,6 @@ using OLUtils
 using ArgParse
 
 # Internal Packages
-include("RunModule.jl")
-using .RunModule: run_SALTJacobian
-include("RunBatchModule.jl")
-using .RunBatchModule: batch_run_SALTJacobian
 
 # Exports
 export main 
@@ -31,7 +27,7 @@ end
 
 function get_args(args)
     s = ArgParseSettings()
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "--verbose", "-v"
             help = "Increase level of logging verbosity."
             action = :store_true
@@ -40,7 +36,7 @@ function get_args(args)
             action = :store_true
     end
     add_arg_group!(s, "Batch Mode")
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "--jacobian", "-j"
             help = "Path to pretrained Jacobian matrix."
             default = nothing
@@ -58,7 +54,7 @@ function get_args(args)
             default = nothing
     end
     add_arg_group!(s, "Input Mode")
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "input"
             help = "Path to .toml file."
             default = nothing 
@@ -75,6 +71,15 @@ function main(args::Vector{String})
     Pkg.instantiate()
     verbose = args["verbose"]
     batch_mode = args["batch"]
+    # Load run module based on batch_mode so that we can avoid loading unecessary packages such as plotting.
+    # The run module files include their own using statements.
+    if batch_mode
+        @info "Running in batch mode"
+        include(joinpath(@__DIR__, "BatchRunModule.jl"))
+    else
+        @info "Running in input mode"
+        include(joinpath(@__DIR__, "RunModule.jl"))
+    end
     if batch_mode
         yaml_path = args["yaml"]
         if isnothing(yaml_path)
@@ -101,7 +106,7 @@ function main(args::Vector{String})
             end
             trainopt = args["trainopt"]
             if isnothing(trainopt)
-                throw(ArgumentError("Must specify trainopts via --trainopts/-t when in batch mode"))
+                throw(ArgumentError("Must specify trainopt via --trainopt/-t when in batch mode"))
             end
             global_dict = Dict("base_path" => "./", "output_path" => output_path, "logging" => false, "toml_path" => "./")
             jacobian_dict = Dict("path" => jacobian_path)
@@ -116,7 +121,7 @@ function main(args::Vector{String})
                     error("Unhandled type $(typeof(x))")
                 end
             end
-            num_trainopts = batch_run_SALTJacobian(toml)
+            num_trainopts = Base.invokelatest(batch_run_SALTJacobian, toml)
             open(yaml_path, "w") do io
                 write(io, "ABORT_IF_ZERO: $num_trainopts # Number of successful trainopts")
             end
@@ -143,7 +148,7 @@ function main(args::Vector{String})
         open(toml_output, "w") do io
             TOML.print(io, toml)
         end
-        run_SALTJacobian(toml)
+        Base.invokelatest(run_SALTJacobian, toml)
         return toml
     end
 end

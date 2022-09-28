@@ -36,9 +36,9 @@
             @test_throws "does not exist" main(args)
             args[end] = "Inputs/arg_tests/batch_mode_invalid_base_surface/"
 
-            # Missing --trainopts
+            # Missing --trainopt
             @test_throws ArgumentError main(args)
-            @test_throws "Must specify trainopts" main(args)
+            @test_throws "Must specify trainopt" main(args)
             push!(args, "--trainopt")
             args = vcat(args, "\"MAGSHIFT Instrument Filter 0.01\"")
         end
@@ -68,9 +68,9 @@
 
     @testset verbose = true "Input Mode" begin
         @testset "Invalid Arguments" begin
-            ARGS = String[]
-            @test_throws ArgumentError main()
-            @test_throws "must specify an input file" main()
+            args = String[]
+            @test_throws ArgumentError main(args)
+            @test_throws "must specify an input file" main(args)
         end
     end
 end

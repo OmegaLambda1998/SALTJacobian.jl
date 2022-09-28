@@ -1,4 +1,4 @@
-module RunBatchModule
+module BatchRunModule
 
 # External Packages
 
@@ -11,3 +11,5 @@ function batch_run_SALTJacobian(toml::Dict)
 end
 
 end
+
+import .BatchRunModule.batch_run_SALTJacobian

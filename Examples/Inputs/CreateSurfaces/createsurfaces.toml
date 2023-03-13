@@ -1,0 +1,20 @@
+[ global ]
+output_path = "../../Outputs/CreateSurfaces"
+logging = true
+
+[ jacobian ]
+jacobian_path = "../../Outputs/CreateJacobian/T21Suite_jacobian.jld2"
+
+[[ surfaces ]]
+# mode = "combine" -> All trainopts are combined into one surface
+# mode = "seperate" -> All trainopts are treated as seperate surfaces
+mode = "combine"
+name = "combine" 
+<include trainopts.toml>
+
+[[ surfaces ]]
+# mode = "combine" -> All trainopts are combined into one surface
+# mode = "seperate" -> All trainopts are treated as seperate surfaces
+mode = "seperate"
+name = "seperate" 
+<include trainopts.toml>

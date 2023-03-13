@@ -1,0 +1,7 @@
+[ global ]
+output_path = "../../Outputs/CreateJacobian"
+logging = true
+
+[ jacobian ]
+name = <%trained_surfaces>
+trained_surfaces = "T21Suite"

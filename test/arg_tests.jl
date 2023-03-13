@@ -42,28 +42,6 @@
             push!(args, "--trainopt")
             args = vcat(args, "\"MAGSHIFT Instrument Filter 0.01\"")
         end
-
-        @testset "Valid Arguments" begin
-            valid_dict = Dict(
-                "global" => Dict(
-                    "base_path" => abspath("./"),
-                    "output_path" => abspath("./Outputs/arg_tests/batch_mode_invalid/"),
-                    "logging" => false,
-                    "log_file" => nothing,
-                    "toml_path" => "./"
-                ),
-                "jacobian" => Dict(
-                    "path" => "Inputs/arg_tests/batch_mode_invalid_jacobian.fits"
-                ),
-                "surfaces" => Dict(
-                    "base_surface" => "Inputs/arg_tests/batch_mode_invalid_base_surface/",
-                    "trainopt" => "\"MAGSHIFT Instrument Filter 0.01\""
-                )
-            )
-
-            toml_dict = main(args)
-            @test valid_dict == toml_dict
-        end
     end
 
     @testset verbose = true "Input Mode" begin

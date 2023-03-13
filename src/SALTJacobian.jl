@@ -3,8 +3,9 @@ module SALTJacobian
 # External packages
 using Pkg
 using TOML
-using OLUtils
+using BetterInputFiles 
 using ArgParse
+import OrderedCollections.OrderedDict
 
 # Internal Packages
 
@@ -67,8 +68,8 @@ function main()
 end
 
 function main(args::Vector{String})
-    args = get_args(args)
     Pkg.instantiate()
+    args = get_args(args)
     verbose = args["verbose"]
     batch_mode = args["batch"]
     # Load run module based on batch_mode so that we can avoid loading unecessary packages such as plotting.
@@ -76,16 +77,13 @@ function main(args::Vector{String})
     if batch_mode
         @info "Running in batch mode"
         include(joinpath(@__DIR__, "BatchRunModule.jl"))
-    else
-        @info "Running in input mode"
-        include(joinpath(@__DIR__, "RunModule.jl"))
-    end
-    if batch_mode
+
         yaml_path = args["yaml"]
         if isnothing(yaml_path)
             throw(ArgumentError("Must specify a yaml path via --yaml/-y when in batch mode"))
         end
         try
+            # Load in arguments 
             output_path = args["output"]
             if isnothing(output_path)
                 throw(ArgumentError("Must specify an output directory via --output/-o when in batch mode"))
@@ -108,19 +106,19 @@ function main(args::Vector{String})
             if isnothing(trainopt)
                 throw(ArgumentError("Must specify trainopt via --trainopt/-t when in batch mode"))
             end
-            global_dict = Dict("base_path" => "./", "output_path" => output_path, "logging" => false, "toml_path" => "./")
+
+            # Prepare TOML
+            global_dict = Dict("base_path" => "./", "output_path" => output_path, "logging" => false)
             jacobian_dict = Dict("path" => jacobian_path)
-            surfaces_dict = Dict("base_surface" => base_surface, "trainopt" => trainopt)
-            toml = Dict("global" => global_dict, "jacobian" => jacobian_dict, "surfaces" => surfaces_dict)
-            setup_global!(toml, verbose)
-            toml_output = joinpath(toml["global"]["output_path"], "input.toml")
-            @info "Saving input toml to $toml_output"
-            open(toml_output, "w") do io
-                TOML.print(io, toml) do x
-                    x isa Nothing && return "nothing"
-                    error("Unhandled type $(typeof(x))")
-                end
+            surface_dict = Dict("base_surface" => base_surface, "trainopt" => trainopt)
+            toml = Dict("global" => global_dict, "jacobian" => [jacobian_dict], "surface" => [surface_dict])
+            temp_toml = tempname() * ".toml"
+            open(temp_toml, "w") do io
+                TOML.print(io, toml)
             end
+            toml = setup_input(temp_toml, verbose)
+
+            # Run SALTJacobian
             num_trainopts = Base.invokelatest(batch_run_SALTJacobian, toml)
             open(yaml_path, "w") do io
                 write(io, "ABORT_IF_ZERO: $num_trainopts # Number of successful trainopts")
@@ -133,21 +131,20 @@ function main(args::Vector{String})
             throw(e)
         end
     else
+        @info "Running in input mode"
+        include(joinpath(@__DIR__, "RunModule.jl"))
+
         toml_path = args["input"]
         if isnothing(toml_path)
             throw(ArgumentError("If not working in batch mode, must specify an input file!"))
         end
-        toml = TOML.parsefile(abspath(toml_path))
-        if !("global" in keys(toml))
-            toml["global"] = Dict()
-        end
-        toml["global"]["toml_path"] = dirname(abspath(toml_path))
-        setup_global!(toml, verbose)
-        toml_output = joinpath(toml["global"]["output_path"], "input.toml")
-        @info "Saving input toml to $toml_output"
-        open(toml_output, "w") do io
-            TOML.print(io, toml)
-        end
+        paths = OrderedDict{String, Tuple{String, String}}(
+            "jacobian_path" => ("base_path", "Jacobian"),
+            "surfaces_path" => ("base_path", "Surfaces"),
+            "salt_surfaces_path" => ("base_path", "SALT_Surfaces"),
+            "analysis_path" => ("base_path", "Analysis")
+        )
+        toml = setup_input(toml_path, verbose)
         Base.invokelatest(run_SALTJacobian, toml)
         return toml
     end

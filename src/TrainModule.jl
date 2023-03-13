@@ -17,6 +17,7 @@ export save_surface
 const COLOUR_LAW_PATH = "salt2_color_correction_final.dat.gz"
 const COLOUR_DISPERSION_PATH = "salt2_color_dispersion.dat.gz"
 const SPLINE_PATH = "pca_1_opt1_final.list.gz"
+const TEMPLATE_PATH = "salt2_template_{n}.dat.gz"
 
 function train_surface(trainopt::String, jacobian::Jacobian, name::String, wave_equiv::Vector{String}=Vector{String}(), mag_equiv::Vector{String}=Vector{String}())
     base_surface = deepcopy(jacobian.base_surface)
@@ -68,18 +69,40 @@ function save_colour_law(colour_law::ColourLaw, path::AbstractString)
     end
 end
 
+function save_template(component::Component, path::AbstractString)
+    template_file = open(GzipDecompressorStream, path, "r") do io
+        return readlines(io)
+    end
+    phase_start = component.phase_start
+    phase_end = component.phase_end
+    phases = phase_start:phase_end
+    template_str = ["" for i in phases]
+    Threads.@threads for (i, p) in collect(enumerate(phases))
+        λ, flux = get_template(component, p)
+        template_str[i] *= join(["$p $(λ[j]) $f" for (j, f) in enumerate(flux)], "\n")
+    end
+    template = join(template_str, "\n")
+    open(GzipCompressorStream, path, "w") do io
+        write(io, template)
+    end
+end
+
 function save_surface(surface::Surface, output::AbstractString)
     surface_path = uncompress(output)
     name = split(splitdir(output)[end], ".")[1]
     tmpdir = joinpath(splitdir(surface_path)[1], name)
     mv(surface_path, tmpdir)
      
-    
     spline_path = joinpath(tmpdir, SPLINE_PATH)
     save_spline(surface.spline, spline_path)
 
     colour_law_path = joinpath(tmpdir, COLOUR_LAW_PATH)
     save_colour_law(surface.colour_law, colour_law_path)
+
+    for (i, component) in enumerate(surface.spline.components)
+        template_path = joinpath(tmpdir, replace(TEMPLATE_PATH, "{n}" => string(i - 1)))
+        save_template(component, template_path)
+    end
 
     compress(tmpdir, output; parent=true)
 end

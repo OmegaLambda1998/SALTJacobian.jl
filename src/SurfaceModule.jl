@@ -7,7 +7,8 @@ using ..ToolModule
 
 # Exports
 export Surface
-export Spline, ColourLaw
+export Spline, ColourLaw, Component
+export get_template
 
 # CONSTANTS 
 const COLOUR_LAW_PATH = "salt2_color_correction_final.dat.gz"
@@ -75,8 +76,8 @@ end
 
 mutable struct Component
     basis::String
-    n_epochs::Float64
-    n_wavelength::Float64
+    n_epochs::Int64
+    n_wavelength::Int64
     phase_start::Float64
     phase_end::Float64
     wave_start::Float64
@@ -86,8 +87,8 @@ end
 
 function Component(component_line::Vector{String})
     basis = component_line[1]
-    n_epochs = parse(Float64, component_line[2])
-    n_wavelengths = parse(Float64, component_line[3])
+    n_epochs = parse(Int64, component_line[2])
+    n_wavelengths = parse(Int64, component_line[3])
     phase_start = parse(Float64, component_line[4])
     phase_end = parse(Float64, component_line[5])
     wave_start = parse(Float64, component_line[6])
@@ -136,7 +137,7 @@ function Surface(name::String, surface_path::AbstractString)
     return Surface(name, colour_law, colour_dispersion, spline)
 end
 
-function reduced_lambda(λ::Float64)
+function reduced_λ(λ::Float64)
     wave_B = 4302.57
     wave_V = 5428.55
     return (λ - wave_B) / (wave_V - wave_B)
@@ -164,12 +165,12 @@ function get_colour_law(surface::SurfaceModule.Surface, λ_min::Float64=2000.0, 
     constant = 0.4 * log(10.0)
 
     c_λ_min = colour_law.min_λ
-    c_r_λ_min = reduced_lambda(c_λ_min)
+    c_r_λ_min = reduced_λ(c_λ_min)
     c_λ_max = colour_law.max_λ
-    c_r_λ_max = reduced_lambda(c_λ_max)
+    c_r_λ_max = reduced_λ(c_λ_max)
 
-    c_λ = λ_min:1:λ_max
-    c_r_λ = reduced_lambda.(c_λ)
+    c_λ = λ_min:λ_max
+    c_r_λ = reduced_λ(c_λ)
 
     α = 1 - sum(colour_law.a)
 
@@ -180,7 +181,7 @@ function get_colour_law(surface::SurfaceModule.Surface, λ_min::Float64=2000.0, 
     p_r_λ_max = c_law(α, colour_law, c_r_λ_max)
 
     λ = λ_min:λ_step:λ_max
-    r_λ = reduced_lambda.(λ)
+    r_λ = reduced_λ.(λ)
 
     p = zeros(length(r_λ))
     for (i, r) in enumerate(r_λ)
@@ -205,7 +206,7 @@ end
 function split_index(index::Int64, component::Component)
     n_epochs = component.n_epochs
     index_phase = index % n_epochs
-    index_wave = floor(index / n_epochs)
+    index_wave = floor(Int64, index / n_epochs)
     return index_phase, index_wave
 end
 
@@ -220,21 +221,32 @@ function reducedEpoch(phase_min::Float64, phase_max::Float64, phase::Float64)
     return number_of_parameters_for_phase * (phase_func(phase) - phase_func_min) / (phase_func_max - phase_func_min)
 end
 
-function lambda_func(λ::Float64)
+function λ_func(λ::Float64)
     return (1.0 / (1.0 + exp(-(λ - 4000.0) / 2000.0)))
 end
 
-function reducedLambda(lambda_func_min::Float64, lambda_func_max::Float64, λ::Float64)
-    number_of_parameters_for_lambda = 100.0
-    return number_of_parameters_for_lambda * (lambda_func(λ) - lambda_func_min) / (lambda_func_max - lambda_func_min)
+function reducedLambda(λ_func_min::Float64, λ_func_max::Float64, λ::Float64)
+    number_of_parameters_for_λ = 100.0
+    return number_of_parameters_for_λ * (λ_func(λ) - λ_func_min) / (λ_func_max - λ_func_min)
 end
 
-function get_spline(surface::SurfaceModule.Surface, component_ind::Int64, phase::Float64)
-    spline = surface.spline
-    component = spline.components[component_ind]
+function BSpline3(t::Float64, i::Int64)
+    if (t < i) || (t > i + 3)
+        return 0.0
+    elseif t < i + 1
+        return 0.5 * ((t - i) ^ 2)
+    elseif t < i + 2
+        return 0.5 * ((i + 2 - t) * (t - i) + (t - i - 1) * (i + 3 - t))
+    else
+        return 0.5 * ((i + 3 - t) ^ 2)
+    end
+end
+
+function get_template(component::Component, phase::Float64)
     λ_min = component.wave_start
     λ_max = component.wave_end
-    λ_step = (λ_max - λ_min) / component.n_wavelengths
+    n_points = component.n_epochs * component.n_wavelength
+    λ_step = floor((λ_max - λ_min) / n_points)
     λ = λ_min:λ_step:λ_max
 
     phase_start = component.phase_start
@@ -246,10 +258,9 @@ function get_spline(surface::SurfaceModule.Surface, component_ind::Int64, phase:
         λ_func_min = λ_func(λ_min)
         λ_func_max = λ_func(λ_max)
         reduced_phase = reducedEpoch(phase_start, phase_end, phase)
-        n_points = component.n_epochs * component.n_wavelength
         flux = Vector{Float64}(undef, length(λ))
         for (i, w) in enumerate(λ)
-            reduced_wave = reduced_lambda(λ_func_min, λ_func_max, w)
+            reduced_wave = reducedLambda(λ_func_min, λ_func_max, w)
             flux_val = 0.0
             for j in 1:n_points
                 index_phase, index_wave = split_index(j - 1, component)

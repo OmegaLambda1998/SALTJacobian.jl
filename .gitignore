@@ -1,4 +1,5 @@
 /Manifest.toml
 /Examples/Outputs/
+/Examples/Inputs/CreateJacobian/T21Suite
 /test/Outputs/
 /prepare_pkg.py

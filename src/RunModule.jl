@@ -164,6 +164,7 @@ function run_SALTJacobian(toml::Dict{String, Any})
     if "ANALYSIS" in keys(toml)
         analysis_stage(toml["ANALYSIS"], jacobians, surfaces, salt_surfaces, config)
     end
+    return jacobian, surfaces
 end
 
 end

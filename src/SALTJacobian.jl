@@ -8,9 +8,12 @@ using ArgParse
 import OrderedCollections.OrderedDict
 
 # Internal Packages
+include(joinpath(@__DIR__, "RunModule.jl"))
+using .RunModule
 
 # Exports
 export main 
+export run_SALTJacobian
 
 function julia_main()::Cint
     try
@@ -76,8 +79,6 @@ function main(args::Vector{String})
     # The run module files include their own using statements.
     if batch_mode
         @info "Running in batch mode"
-        include(joinpath(@__DIR__, "BatchRunModule.jl"))
-
         yaml_path = args["yaml"]
         if isnothing(yaml_path)
             throw(ArgumentError("Must specify a yaml path via --yaml/-y when in batch mode"))
@@ -119,7 +120,7 @@ function main(args::Vector{String})
             toml = setup_input(temp_toml, verbose)
 
             # Run SALTJacobian
-            num_trainopts = Base.invokelatest(batch_run_SALTJacobian, toml)
+            num_trainopts = run_SALTJacobian(toml)
             open(yaml_path, "w") do io
                 write(io, "ABORT_IF_ZERO: $num_trainopts # Number of successful trainopts")
             end
@@ -132,7 +133,6 @@ function main(args::Vector{String})
         end
     else
         @info "Running in input mode"
-        include(joinpath(@__DIR__, "RunModule.jl"))
 
         toml_path = args["input"]
         if isnothing(toml_path)
@@ -145,7 +145,7 @@ function main(args::Vector{String})
             "analysis_path" => ("base_path", "Analysis")
         )
         toml = setup_input(toml_path, verbose)
-        Base.invokelatest(run_SALTJacobian, toml)
+        run_SALTJacobian(toml)
         return toml
     end
 end

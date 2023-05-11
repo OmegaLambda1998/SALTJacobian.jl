@@ -167,5 +167,3 @@ function run_SALTJacobian(toml::Dict{String, Any})
 end
 
 end
-
-import .RunModule.run_SALTJacobian

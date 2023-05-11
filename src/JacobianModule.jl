@@ -23,15 +23,15 @@ OUTPUT_TRAIN = "OUTPUT_TRAIN"
 mutable struct Jacobian
     name::String
     trainopt_names::Vector{String}
-    trainopts::Dict{String, Trainopt}
-    ∇splines::Dict{String, Vector{Vector{Float64}}}
-    ∇colour_law::Dict{String, Vector{Float64}}
+    trainopts::Dict{String,Trainopt}
+    ∇splines::Dict{String,Vector{Vector{Float64}}}
+    ∇colour_law::Dict{String,Vector{Float64}}
     base_surface::Surface
     base_surface_path::AbstractString
 end
 
-function Jacobian(options::Dict{String, Any}, config::Dict{String, Any})
-    name = get(options, "NAME", "jacobian") 
+function Jacobian(options::Dict{String,Any}, config::Dict{String,Any})
+    name = get(options, "NAME", "jacobian")
     @info "Creating Jacobian $name"
     base_path = config["BASE_PATH"]
     trained_surfaces_path = options["TRAINED_SURFACES"]
@@ -48,20 +48,21 @@ function Jacobian(options::Dict{String, Any}, config::Dict{String, Any})
     surface_output = joinpath(trained_surfaces_path, OUTPUT_TRAIN)
     submit_info = load_inputfile(joinpath(trained_surfaces_path, SUBMIT_INFO), "yaml")
     trainopt_list = submit_info["TRAINOPT_OUT_LIST"]
+    @show trainopt_list
     mag_equiv = submit_info["SURVEY_LIST_SAMEMAGSYS"]
     wave_equiv = submit_info["SURVEY_LIST_SAMEFILTER"]
 
     trainopt_names = Vector{String}()
-    surfaces = Dict{String, Surface}()
-    trainopts = Dict{String, Trainopt}()
+    surfaces = Dict{String,Surface}()
+    trainopts = Dict{String,Trainopt}()
 
     base_surface = nothing
     base_surface_path = nothing
     #TODO Replace with ProgressBars
     for (i, trainopt_details) in enumerate(trainopt_list)
-        @debug "Evaluating TRAINOPT$(lpad(i, 3, "0"))"
+        @info "Evaluating TRAINOPT$(lpad(i - 1, 3, "0"))"
         surface_name = trainopt_details[1]
-        surface_path = joinpath(surface_output, surface_name) 
+        surface_path = joinpath(surface_output, surface_name)
         trainopt = Trainopt(trainopt_details[end])
         trainopt_name = join([trainopt.type, trainopt.instrument, trainopt.filter], "-")
         if !isdir(surface_path)
@@ -86,8 +87,9 @@ function Jacobian(options::Dict{String, Any}, config::Dict{String, Any})
     if isnothing(base_surface)
         error("No base surface found!")
     end
-    ∇splines = Dict{String, Vector{Vector{Float64}}}(name => [base_surface.spline.components[i].values - surfaces[name].spline.components[i].values for i in 1:length(base_surface.spline.components)] for name in trainopt_names)
-    ∇colour_law = Dict{String, Vector{Float64}}(name => base_surface.colour_law.a - surfaces[name].colour_law.a for name in trainopt_names)
+    ∇splines = Dict{String,Vector{Vector{Float64}}}(name => [base_surface.spline.components[i].values - surfaces[name].spline.components[i].values for i in 1:length(base_surface.spline.components)] for name in trainopt_names)
+    ∇colour_law = Dict{String,Vector{Float64}}(name => base_surface.colour_law.a - surfaces[name].colour_law.a for name in trainopt_names)
+    @show trainopt_names
     return Jacobian(name, trainopt_names, trainopts, ∇splines, ∇colour_law, base_surface, base_surface_path)
 end
 

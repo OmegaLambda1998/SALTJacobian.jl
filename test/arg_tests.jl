@@ -6,7 +6,7 @@
             @test_throws ArgumentError main(args)
             @test_throws "Must specify a yaml path" main(args)
             push!(args, "--yaml")
-            push!(args, "Outputs/arg_tests/batch_mode_invalid/batch_mode_invalid.yaml")
+            push!(args, joinpath(@__DIR__, "Outputs/arg_tests/batch_mode_invalid/batch_mode_invalid.yaml"))
 
             # Missing --output
             @test_throws ArgumentError main(args)

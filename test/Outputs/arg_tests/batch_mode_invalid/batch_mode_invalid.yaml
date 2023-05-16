@@ -1,0 +1,2 @@
+ABORT_IF_ZERO: 0
+ERROR: ArgumentError("Must specify trainopt via --trainopt/-t when in batch mode")

@@ -12,7 +12,7 @@ using .TrainoptModule
 include(joinpath(@__DIR__, "SurfaceModule.jl"))
 using .SurfaceModule
 
-include(joinpath(@__DIR__, "JacobianModule.jl")_
+include(joinpath(@__DIR__, "JacobianModule.jl"))
 using .JacobianModule
 
 include(joinpath(@__DIR__, "TrainModule.jl"))

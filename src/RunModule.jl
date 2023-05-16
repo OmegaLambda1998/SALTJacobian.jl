@@ -3,19 +3,19 @@ module RunModule
 # External Packages
 
 # Internal Packages
-include("ToolModule.jl")
+include(joinpath(@__DIR__, "ToolModule.jl"))
 using .ToolModule
 
-include("TrainoptModule.jl")
+include(joinpath(@__DIR__, "TrainoptModule.jl"))
 using .TrainoptModule
 
-include("SurfaceModule.jl")
+include(joinpath(@__DIR__, "SurfaceModule.jl"))
 using .SurfaceModule
 
-include("JacobianModule.jl")
+include(joinpath(@__DIR__, "JacobianModule.jl")_
 using .JacobianModule
 
-include("TrainModule.jl")
+include(joinpath(@__DIR__, "TrainModule.jl"))
 using .TrainModule
 
 # Exports

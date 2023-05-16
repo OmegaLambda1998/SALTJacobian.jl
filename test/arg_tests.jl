@@ -4,7 +4,7 @@
         @testset "Invalid Arguments" begin
             # Missing --yaml
             @test_throws ArgumentError main(args)
-            @test_throws "Must specify a yaml path via --yaml/-y when in batch mode" main(args)
+            @test_throws ArgumentError("Must specify a yaml path via --yaml/-y when in batch mode") main(args)
             push!(args, "--yaml")
             push!(args, joinpath(@__DIR__, "Outputs/arg_tests/batch_mode_invalid/batch_mode_invalid.yaml"))
 

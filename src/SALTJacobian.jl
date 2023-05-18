@@ -14,6 +14,7 @@ using .RunModule
 # Exports
 export main 
 export run_SALTJacobian
+export Jacobian
 
 function julia_main()::Cint
     try

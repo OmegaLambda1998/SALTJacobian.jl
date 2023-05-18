@@ -20,6 +20,7 @@ using .TrainModule
 
 # Exports
 export run_SALTJacobian
+export Jacobian
 
 function jacobian_stage(option::Dict{String, Any}, config::Dict{String, Any})
     if "TRAINED_SURFACES" in keys(option)

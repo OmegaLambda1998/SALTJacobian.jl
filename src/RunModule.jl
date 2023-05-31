@@ -39,7 +39,9 @@ function jacobian_stage(option::Dict{String, Any}, config::Dict{String, Any})
             base_surface_output = base_surface_output * ".tar.gz"
         end
         @info "Saving base surface to $base_surface_output"
-        cp(jacobian.base_surface_path, base_surface_output, force=true)
+        if jacobian.base_surface_path != base_surface_output
+            cp(jacobian.base_surface_path, base_surface_output, force=true)
+        end
         if isdir(base_surface_output)
             @info "Compressing $base_surface_output"
             compress(base_surface_output, base_surface_output * ".tar.gz"; parent=true)

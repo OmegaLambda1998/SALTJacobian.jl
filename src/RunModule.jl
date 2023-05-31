@@ -23,26 +23,7 @@ export run_SALTJacobian
 export Jacobian
 
 function jacobian_stage(option::Dict{String, Any}, config::Dict{String, Any})
-    if "TRAINED_SURFACES" in keys(option)
-        jacobian = Jacobian(option, config)
-        if !occursin("jacobian", jacobian.name)
-            jacobian.name *= "_jacobian"
-        end
-        base_surface_output = joinpath(config["OUTPUT_PATH"], "TRAINOPT000")
-        if isfile(jacobian.base_surface_path)
-            base_surface_output = base_surface_output * ".tar.gz"
-        end
-        @info "Saving base surface to $base_surface_output"
-        cp(jacobian.base_surface_path, base_surface_output, force=true)
-        if isdir(base_surface_output)
-            @info "Compressing $base_surface_output"
-            compress(base_surface_output, base_surface_output * ".tar.gz"; parent=true)
-            rm(base_surface_output, recursive=true, force=true)
-            jacobian.base_surface_path = base_surface_output * ".tar.gz"
-        end
-        jacobian_output = joinpath(config["OUTPUT_PATH"], jacobian.name * ".jld2")
-        save_jacobian(jacobian, jacobian_output) 
-    elseif "JACOBIAN_PATH" in keys(option)
+    if "JACOBIAN_PATH" in keys(option)
         input = option["JACOBIAN_PATH"]
         if !isabspath(input)
             input = joinpath(config["BASE_PATH"], input)
@@ -68,6 +49,25 @@ function jacobian_stage(option::Dict{String, Any}, config::Dict{String, Any})
         jacobian_output = joinpath(config["OUTPUT_PATH"], jacobian.name * ".jld2")
         @info "Saving Jacobian to $jacobian_output"
         cp(input, jacobian_output, force=true)
+    elseif "TRAINED_SURFACES" in keys(option)
+        jacobian = Jacobian(option, config)
+        if !occursin("jacobian", jacobian.name)
+            jacobian.name *= "_jacobian"
+        end
+        base_surface_output = joinpath(config["OUTPUT_PATH"], "TRAINOPT000")
+        if isfile(jacobian.base_surface_path)
+            base_surface_output = base_surface_output * ".tar.gz"
+        end
+        @info "Saving base surface to $base_surface_output"
+        cp(jacobian.base_surface_path, base_surface_output, force=true)
+        if isdir(base_surface_output)
+            @info "Compressing $base_surface_output"
+            compress(base_surface_output, base_surface_output * ".tar.gz"; parent=true)
+            rm(base_surface_output, recursive=true, force=true)
+            jacobian.base_surface_path = base_surface_output * ".tar.gz"
+        end
+        jacobian_output = joinpath(config["OUTPUT_PATH"], jacobian.name * ".jld2")
+        save_jacobian(jacobian, jacobian_output) 
     else
         error("Keys TRAINED_SURFACES or JACOBIAN_PATH not found, can not create Jacobian matrix without one or the other.")
     end

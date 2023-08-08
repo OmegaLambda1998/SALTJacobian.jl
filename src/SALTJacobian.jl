@@ -6,6 +6,7 @@ using TOML
 using BetterInputFiles 
 using ArgParse
 import OrderedCollections.OrderedDict
+using StatProfilerHTML
 
 # Internal Packages
 include(joinpath(@__DIR__, "RunModule.jl"))
@@ -35,6 +36,9 @@ function get_args(args)
     @add_arg_table! s begin
         "--verbose", "-v"
             help = "Increase level of logging verbosity."
+            action = :store_true
+        "--profile", "-p"
+            help = "Run profiler"
             action = :store_true
         "--batch"
             help = "Whether or not we're running in batch mode."
@@ -121,7 +125,11 @@ function main(args::Vector{String})
             toml = setup_input(temp_toml, verbose)
 
             # Run SALTJacobian
-            num_trainopts = run_SALTJacobian(toml)
+            if args["profile"]
+                @profilehtml num_trainopts = run_SALTJacobian(toml)
+            else
+                num_trainopts = run_SALTJacobian(toml)
+            end
             open(yaml_path, "w") do io
                 write(io, "ABORT_IF_ZERO: $num_trainopts # Number of successful trainopts")
             end
@@ -146,7 +154,11 @@ function main(args::Vector{String})
             "analysis_path" => ("base_path", "Analysis")
         )
         toml = setup_input(toml_path, verbose)
-        run_SALTJacobian(toml)
+        if args["profile"]
+            @profilehtml num_trainopts = run_SALTJacobian(toml)
+        else
+            num_trainopts = run_SALTJacobian(toml)
+        end
         return toml
     end
 end

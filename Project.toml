@@ -11,8 +11,9 @@ FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+StatProfilerHTML = "a8a75453-ed82-57c9-9e16-4cd1196ecbf5"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 
 [compat]
-julia = "1"
+julia = "^1.6"

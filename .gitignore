@@ -2,3 +2,5 @@
 /Examples/Outputs/
 /Examples/Inputs/CreateJacobian/T21Suite
 /prepare_pkg.py
+/statprof/
+/docs/build/

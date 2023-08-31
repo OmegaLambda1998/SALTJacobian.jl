@@ -22,7 +22,7 @@ using .TrainModule
 export run_SALTJacobian
 export Jacobian
 
-function jacobian_stage(option::Dict{String, Any}, config::Dict{String, Any})
+function jacobian_stage(option::Dict{String,Any}, config::Dict{String,Any})
     if "JACOBIAN_PATH" in keys(option)
         input = option["JACOBIAN_PATH"]
         if !isabspath(input)
@@ -69,14 +69,14 @@ function jacobian_stage(option::Dict{String, Any}, config::Dict{String, Any})
             jacobian.base_surface_path = base_surface_output * ".tar.gz"
         end
         jacobian_output = joinpath(config["OUTPUT_PATH"], jacobian.name * ".jld2")
-        save_jacobian(jacobian, jacobian_output) 
+        save_jacobian(jacobian, jacobian_output)
     else
         error("Keys TRAINED_SURFACES or JACOBIAN_PATH not found, can not create Jacobian matrix without one or the other.")
     end
     return jacobian
 end
 
-function surfaces_stage(options::Vector{Dict{String, Any}}, jacobian::Jacobian, config::Dict{String, Any})
+function surfaces_stage(options::Vector{Dict{String,Any}}, jacobian::Jacobian, config::Dict{String,Any})
     surfaces = Vector{Surface}()
     for option in options
         output_name = option["NAME"]
@@ -96,17 +96,16 @@ function surfaces_stage(options::Vector{Dict{String, Any}}, jacobian::Jacobian, 
             jacobian.base_surface_path = base_surface_output * ".tar.gz"
         end
         i = 1
-        if "TRAINOPTS" in keys(option) 
+        if "TRAINOPTS" in keys(option)
             trainopts = option["TRAINOPTS"]
             mode = get(option, "MODE", "seperate")
-            mag_equiv = get(option, "MAG_EQUIV", Vector{String}())
-            wave_equiv = get(option, "WAVE_EQUIV", Vector{String}())
+            mag_equiv = get(option, "SURVEY_LIST_SAMEMAGSYS", Vector{String}())
+            wave_equiv = get(option, "SURVEY_LIST_SAMEFILTER", Vector{String}())
             if mode == "seperate"
                 for trainopt in trainopts
                     name = "TRAINOPT$(lpad(i, 3, "0"))"
                     @info "Creating surface for $name, with trainopt \"$trainopt\""
                     surface = train_surface(trainopt, jacobian, name, wave_equiv, mag_equiv)
-                    push!(surfaces, surface)
                     output = joinpath(output_path, "$name.tar.gz")
                     cp(jacobian.base_surface_path, output, force=true)
                     save_surface(surface, output)
@@ -117,7 +116,6 @@ function surfaces_stage(options::Vector{Dict{String, Any}}, jacobian::Jacobian, 
                 trainopt = join(trainopts, " ")
                 @info "Creating surface for $name with trainopt \"$trainopt\""
                 surface = train_surface(trainopt, jacobian, name, wave_equiv, mag_equiv)
-                push!(surfaces, surface)
                 output = joinpath(output_path, "$name.tar.gz")
                 cp(jacobian.base_surface_path, output, force=true)
                 save_surface(surface, output)
@@ -142,14 +140,14 @@ function surfaces_stage(options::Vector{Dict{String, Any}}, jacobian::Jacobian, 
     return surfaces
 end
 
-function run_SALTJacobian(toml::Dict{String, Any})
+function run_SALTJacobian(toml::Dict{String,Any})
     config = toml["GLOBAL"]
 
     # Create / Load Jacobian
     if "JACOBIAN" in keys(toml)
         jacobian = jacobian_stage(toml["JACOBIAN"], config)
     else
-        jacobian = nothing 
+        jacobian = nothing
     end
 
     # Create approximate surfaces

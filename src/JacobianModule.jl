@@ -2,6 +2,7 @@ module JacobianModule
 
 # External Packages
 import BetterInputFiles.IOModule.load_inputfile
+using ProgressBars
 using FileIO
 using JLD2
 
@@ -48,9 +49,8 @@ function Jacobian(options::Dict{String,Any}, config::Dict{String,Any})
     surface_output = joinpath(trained_surfaces_path, OUTPUT_TRAIN)
     submit_info = load_inputfile(joinpath(trained_surfaces_path, SUBMIT_INFO), "yaml")
     trainopt_list = submit_info["TRAINOPT_OUT_LIST"]
-    @show trainopt_list
-    mag_equiv = submit_info["SURVEY_LIST_SAMEMAGSYS"]
-    wave_equiv = submit_info["SURVEY_LIST_SAMEFILTER"]
+    #mag_equiv = submit_info["SURVEY_LIST_SAMEMAGSYS"]
+    #wave_equiv = submit_info["SURVEY_LIST_SAMEFILTER"]
 
     trainopt_names = Vector{String}()
     surfaces = Dict{String,Surface}()
@@ -58,9 +58,7 @@ function Jacobian(options::Dict{String,Any}, config::Dict{String,Any})
 
     base_surface = nothing
     base_surface_path = nothing
-    #TODO Replace with ProgressBars
-    for (i, trainopt_details) in enumerate(trainopt_list)
-        @info "Evaluating TRAINOPT$(lpad(i - 1, 3, "0"))"
+    for (i, trainopt_details) in ProgressBar(enumerate(trainopt_list))
         surface_name = trainopt_details[1]
         surface_path = joinpath(surface_output, surface_name)
         trainopt = Trainopt(trainopt_details[end])
@@ -79,6 +77,7 @@ function Jacobian(options::Dict{String,Any}, config::Dict{String,Any})
             base_surface_path = surface_path
         else
             surface = Surface(surface_name, surface_path)
+            surface.salt_info *= "\n\n$(trainopt_details[end])"
             push!(trainopt_names, trainopt_name)
             surfaces[trainopt_name] = surface
             trainopts[trainopt_name] = trainopt
@@ -89,7 +88,6 @@ function Jacobian(options::Dict{String,Any}, config::Dict{String,Any})
     end
     ∇splines = Dict{String,Vector{Vector{Float64}}}(name => [base_surface.spline.components[i].values - surfaces[name].spline.components[i].values for i in 1:length(base_surface.spline.components)] for name in trainopt_names)
     ∇colour_law = Dict{String,Vector{Float64}}(name => base_surface.colour_law.a - surfaces[name].colour_law.a for name in trainopt_names)
-    @show trainopt_names
     return Jacobian(name, trainopt_names, trainopts, ∇splines, ∇colour_law, base_surface, base_surface_path)
 end
 

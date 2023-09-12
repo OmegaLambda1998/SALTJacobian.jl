@@ -23,7 +23,7 @@ mutable struct ColourLaw
     version_key::String
     version::Int64
     min_λ_key::String
-    min_λ::Float64 
+    min_λ::Float64
     max_λ_key::String
     max_λ::Float64
 end
@@ -69,7 +69,7 @@ function ColourDispersion(path::AbstractString)
     lines = [parse.(Float64, split(i)) for i in lines]
 
     λ = getindex.(lines, 1)
-    σ = getindex.(lines, 2) 
+    σ = getindex.(lines, 2)
 
     return ColourDispersion(λ, σ)
 end
@@ -110,16 +110,17 @@ function Spline(path::AbstractString)
     num_components = parse(Int64, lines[1])
     components = Vector{Component}(undef, num_components)
     for i in 1:num_components
-        components[i] = Component(string.(split(lines[i + 1])))
+        components[i] = Component(string.(split(lines[i+1])))
     end
     return Spline(components)
 end
 
-struct Surface
+mutable struct Surface
     name::String
     colour_law::ColourLaw
     colour_dispersion::ColourDispersion
     spline::Spline
+    salt_info::String
 end
 
 function Surface(name::String, surface_path::AbstractString)
@@ -134,7 +135,36 @@ function Surface(name::String, surface_path::AbstractString)
     spline_path = joinpath(surface_path, SPLINE_PATH)
     spline = Spline(spline_path)
 
-    return Surface(name, colour_law, colour_dispersion, spline)
+    salt_info = gen_salt_info(colour_law)
+
+    return Surface(name, colour_law, colour_dispersion, spline, salt_info)
+end
+
+function gen_salt_info(colour_law::ColourLaw)
+    min_λ = colour_law.min_λ
+    max_λ = colour_law.max_λ
+    version = colour_law.version
+    a = colour_law.a
+    return """
+    RESTLAMBDA_RANGE: $min_λ $max_λ
+    COLORLAW_VERSION: $version
+    COLORCOR_PARMAS: $min_λ $max_λ $(length(a)) $(join(a, " "))
+
+    # TODO: Find out how to calculate this
+    MAG_OFFSET: 0.27
+    SIGMA_INT: 0.106
+    COLOR_OFFSET: 0.0
+
+    # TODO: Find out how to calculate this
+    SEDFLUX_INTERP_OPT: 2  # 1=>linear,    2=>spline
+    ERRMAP_INTERP_OPT:  1  # 0=snake off;  1=>linear  2=>spline
+    ERRMAP_KCOR_OPT:    1  # 1/0 => on/off
+
+    # TODO: Find out how to calculate this
+    MAGERR_FLOOR:   0.005            # model-error floor
+    MAGERR_LAMOBS:  0.0  2000  4000  # magerr minlam maxlam
+    MAGERR_LAMREST: 0.1   100   200  # magerr minlam maxlam
+    """
 end
 
 function reduced_λ(λ::Float64)
@@ -146,7 +176,7 @@ end
 function derivative(α::Float64, colour_law::ColourLaw, r_λ::Float64)
     d = α
     for (e, a) in enumerate(colour_law.a)
-        d += (e + 1) * a * (r_λ ^ e)
+        d += (e + 1) * a * (r_λ^e)
     end
     return d
 end
@@ -154,7 +184,7 @@ end
 function c_law(α::Float64, colour_law::ColourLaw, r_λ::Float64)
     d = α * r_λ
     for (e, a) in enumerate(colour_law.a)
-        d += a * (r_λ ^ (e + 1))
+        d += a * (r_λ^(e + 1))
     end
     return d
 end
@@ -169,8 +199,8 @@ function get_colour_law(surface::SurfaceModule.Surface, λ_min::Float64=2000.0, 
     c_λ_max = colour_law.max_λ
     c_r_λ_max = reduced_λ(c_λ_max)
 
-    c_λ = λ_min:λ_max
-    c_r_λ = reduced_λ(c_λ)
+    #c_λ = λ_min:λ_max
+    #c_r_λ = reduced_λ(c_λ)
 
     α = 1 - sum(colour_law.a)
 
@@ -190,7 +220,7 @@ function get_colour_law(surface::SurfaceModule.Surface, λ_min::Float64=2000.0, 
         elseif r > r_λ_max
             @inbounds p[i] = @. p_r_λ_max + p_derivative_max * (r - r_λ_max)
         else
-            @inbounds p[i] = c_law(α, colour_law, r) 
+            @inbounds p[i] = c_law(α, colour_law, r)
         end
     end
 
@@ -211,7 +241,7 @@ function split_index(index::Int64, component::Component)
 end
 
 function phase_func(phase::Float64)
-    return (-1.0 * (0.045 * phase) ^ 3.0 + phase + 6.0 * (1.0 / (1.0 + exp(-0.5 * (phase + 18.0))) + 1.0 / (1.0 + exp(-0.3 * (phase))) + 1.0 / (1.0 + exp(-0.3 * (phase - 20.0)))))
+    return (-1.0 * (0.045 * phase)^3.0 + phase + 6.0 * (1.0 / (1.0 + exp(-0.5 * (phase + 18.0))) + 1.0 / (1.0 + exp(-0.3 * (phase))) + 1.0 / (1.0 + exp(-0.3 * (phase - 20.0)))))
 end
 
 function reducedEpoch(phase_min::Float64, phase_max::Float64, phase::Float64)
@@ -234,11 +264,11 @@ function BSpline3(t::Float64, i::Int64)
     if (t < i) || (t > i + 3)
         return 0.0
     elseif t < i + 1
-        return 0.5 * ((t - i) ^ 2)
+        return 0.5 * ((t - i)^2)
     elseif t < i + 2
         return 0.5 * ((i + 2 - t) * (t - i) + (t - i - 1) * (i + 3 - t))
     else
-        return 0.5 * ((i + 3 - t) ^ 2)
+        return 0.5 * ((i + 3 - t)^2)
     end
 end
 

@@ -3,7 +3,7 @@ module SALTJacobian
 # External packages
 using Pkg
 using TOML
-using BetterInputFiles 
+using BetterInputFiles
 using ArgParse
 import OrderedCollections.OrderedDict
 using StatProfilerHTML
@@ -13,7 +13,7 @@ include(joinpath(@__DIR__, "RunModule.jl"))
 using .RunModule
 
 # Exports
-export main 
+export main
 export run_SALTJacobian
 export Jacobian
 
@@ -35,38 +35,38 @@ function get_args(args)
     s = ArgParseSettings()
     @add_arg_table! s begin
         "--verbose", "-v"
-            help = "Increase level of logging verbosity."
-            action = :store_true
+        help = "Increase level of logging verbosity."
+        action = :store_true
         "--profile", "-p"
-            help = "Run profiler"
-            action = :store_true
+        help = "Run profiler"
+        action = :store_true
         "--batch"
-            help = "Whether or not we're running in batch mode."
-            action = :store_true
+        help = "Whether or not we're running in batch mode."
+        action = :store_true
     end
     add_arg_group!(s, "Batch Mode")
     @add_arg_table! s begin
         "--jacobian", "-j"
-            help = "Path to pretrained Jacobian matrix."
-            default = nothing
+        help = "Path to pretrained Jacobian matrix."
+        default = nothing
         "--base_surface", "-b"
-            help = "Path to base (unperturbed) surface."
-            default = nothing
+        help = "Path to base (unperturbed) surface."
+        default = nothing
         "--output", "-o"
-            help = "Path to output directory."
-            default = nothing
+        help = "Path to output directory."
+        default = nothing
         "--yaml", "-y"
-            help = "Path to output yaml file. Will create a .yaml file for SNANA compliance."
-            default = nothing
+        help = "Path to output yaml file. Will create a .yaml file for SNANA compliance."
+        default = nothing
         "--trainopt", "-t"
-            help = "TRAINOPT string, as used by submit_batch."
-            default = nothing
+        help = "TRAINOPT string, as used by submit_batch."
+        default = nothing
     end
     add_arg_group!(s, "Input Mode")
     @add_arg_table! s begin
         "input"
-            help = "Path to .toml file."
-            default = nothing 
+        help = "Path to .toml file."
+        default = nothing
     end
     return parse_args(args, s)
 end
@@ -147,12 +147,6 @@ function main(args::Vector{String})
         if isnothing(toml_path)
             throw(ArgumentError("If not working in batch mode, must specify an input file!"))
         end
-        paths = OrderedDict{String, Tuple{String, String}}(
-            "jacobian_path" => ("base_path", "Jacobian"),
-            "surfaces_path" => ("base_path", "Surfaces"),
-            "salt_surfaces_path" => ("base_path", "SALT_Surfaces"),
-            "analysis_path" => ("base_path", "Analysis")
-        )
         toml = setup_input(toml_path, verbose)
         if args["profile"]
             @profilehtml num_trainopts = run_SALTJacobian(toml)

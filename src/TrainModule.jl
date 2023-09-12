@@ -1,7 +1,7 @@
 module TrainModule
 
 # External Packages
-using CodecZlib 
+using CodecZlib
 
 # Internal Packages
 using ..ToolModule
@@ -14,6 +14,7 @@ export train_surface
 export save_surface
 
 # CONSTANTS 
+const SALT_INFO_PATH = "SALT.INFO"
 const COLOUR_LAW_PATH = "salt2_color_correction_final.dat.gz"
 const COLOUR_DISPERSION_PATH = "salt2_color_dispersion.dat.gz"
 const SPLINE_PATH = "pca_1_opt1_final.list.gz"
@@ -22,7 +23,6 @@ const TEMPLATE_PATH = "salt2_template_{n}.dat.gz"
 function train_surface(trainopt::String, jacobian::Jacobian, name::String, wave_equiv::Vector{String}=Vector{String}(), mag_equiv::Vector{String}=Vector{String}())
     base_surface = deepcopy(jacobian.base_surface)
     trainopts = parse_trainopts(string.(split(trainopt)), wave_equiv, mag_equiv)
-    cl = base_surface.colour_law.a
     for trainopt in trainopts
         trainopt_name = join([trainopt.type, trainopt.instrument, trainopt.filter], "-")
         if !(trainopt_name in jacobian.trainopt_names)
@@ -41,7 +41,9 @@ function train_surface(trainopt::String, jacobian::Jacobian, name::String, wave_
         # ∴ perturbed_surface = base_surface - ∇colour_law
         ∇colour_law = jacobian.∇colour_law[trainopt_name]
         base_surface.colour_law.a -= ∇colour_law .* scale
+        base_surface.salt_info *= "\n$(trainopt.type) $(trainopt.instrument) $(trainopt.filter) $(trainopt.scale)"
     end
+    base_surface.name = name
     return base_surface
 end
 
@@ -50,7 +52,7 @@ function save_spline(spline::Spline, path::AbstractString)
         return readlines(io)
     end
     for (i, component) in enumerate(spline.components)
-        spline_file[i + 1] = "$(component.basis) $(component.n_epochs) $(component.n_wavelength) $(component.phase_start) $(component.phase_end) $(component.wave_start) $(component.wave_end) $(join(component.values, " "))"
+        spline_file[i+1] = "$(component.basis) $(component.n_epochs) $(component.n_wavelength) $(component.phase_start) $(component.phase_end) $(component.wave_start) $(component.wave_end) $(join(component.values, " "))"
     end
     open(GzipCompressorStream, path, "w") do io
         write(io, join(spline_file, "\n"))
@@ -62,7 +64,7 @@ function save_colour_law(colour_law::ColourLaw, path::AbstractString)
         return readlines(io)
     end
     for (i, a) in enumerate(colour_law.a)
-        colour_law_file[i + 1] = string(a)
+        colour_law_file[i+1] = string(a)
     end
     open(GzipCompressorStream, path, "w") do io
         write(io, join(colour_law_file, "\n"))
@@ -70,13 +72,10 @@ function save_colour_law(colour_law::ColourLaw, path::AbstractString)
 end
 
 function save_template(component::Component, path::AbstractString)
-    template_file = open(GzipDecompressorStream, path, "r") do io
-        return readlines(io)
-    end
     phase_start = component.phase_start
     phase_end = component.phase_end
     phases = phase_start:phase_end
-    template_str = ["" for i in phases]
+    template_str = ["" for _ in phases]
     Threads.@threads for (i, p) in collect(enumerate(phases))
         λ, flux = get_template(component, p)
         template_str[i] *= join(["$p $(λ[j]) $f" for (j, f) in enumerate(flux)], "\n")
@@ -87,12 +86,18 @@ function save_template(component::Component, path::AbstractString)
     end
 end
 
+function save_salt_info(salt_info::String, path::AbstractString)
+    open(path, "w") do io
+        write(io, salt_info)
+    end
+end
+
 function save_surface(surface::Surface, output::AbstractString)
     surface_path = uncompress(output)
     name = split(splitdir(output)[end], ".")[1]
     tmpdir = joinpath(splitdir(surface_path)[1], name)
     mv(surface_path, tmpdir)
-     
+
     spline_path = joinpath(tmpdir, SPLINE_PATH)
     save_spline(surface.spline, spline_path)
 
@@ -103,6 +108,9 @@ function save_surface(surface::Surface, output::AbstractString)
         template_path = joinpath(tmpdir, replace(TEMPLATE_PATH, "{n}" => string(i - 1)))
         save_template(component, template_path)
     end
+
+    salt_info_path = joinpath(tmpdir, SALT_INFO_PATH)
+    save_salt_info(surface.salt_info, salt_info_path)
 
     compress(tmpdir, output; parent=true)
 end

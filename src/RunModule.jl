@@ -159,7 +159,6 @@ function run_SALTJacobian(toml::Dict{String,Any})
     else
         surfaces = Vector{Surface}()
     end
-    num_trainopts = length(surfaces)
 
     # Plotting and comparison
     if "ANALYSIS" in keys(toml)

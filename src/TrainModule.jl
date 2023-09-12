@@ -14,7 +14,7 @@ export train_surface
 export save_surface
 
 # CONSTANTS 
-const SALT_INFO_PATH = "SALT.INFO"
+const SALT_INFO_PATH = "SALT2.INFO"
 const COLOUR_LAW_PATH = "salt2_color_correction_final.dat.gz"
 const COLOUR_DISPERSION_PATH = "salt2_color_dispersion.dat.gz"
 const SPLINE_PATH = "pca_1_opt1_final.list.gz"

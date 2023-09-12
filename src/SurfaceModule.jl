@@ -148,7 +148,7 @@ function gen_salt_info(colour_law::ColourLaw)
     return """
     RESTLAMBDA_RANGE: $min_λ $max_λ
     COLORLAW_VERSION: $version
-    COLORCOR_PARMAS: $min_λ $max_λ $(length(a)) $(join(a, " "))
+    COLORCOR_PARAMS: $min_λ $max_λ $(length(a)) $(join(a, " "))
 
     # TODO: Find out how to calculate this
     MAG_OFFSET: 0.27

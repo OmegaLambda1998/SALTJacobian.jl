@@ -26,7 +26,8 @@ function train_surface(trainopt::String, jacobian::Jacobian, name::String, wave_
     for trainopt in trainopts
         trainopt_name = join([trainopt.type, trainopt.instrument, trainopt.filter], "-")
         if !(trainopt_name in jacobian.trainopt_names)
-            error("Trainopt $(split(trainopt_name, "-")) not in jacobian. Possible options are $(split.(jacobian.trainopt_names, "-"))")
+            @warn "Trainopt $(split(trainopt_name, "-")) not in jacobian, skipping." 
+            continue
         end
         jacobian_scale = jacobian.trainopts[trainopt_name].scale
         trainopt_scale = trainopt.scale
